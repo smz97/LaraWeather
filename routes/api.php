@@ -2,7 +2,7 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-
+use Illuminate\Support\Facades\Http;
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -16,4 +16,17 @@ use Illuminate\Support\Facades\Route;
 
 Route::middleware('auth:api')->get('/user', function (Request $request) {
     return $request->user();
+});
+
+Route::get('/weather', function () {
+
+    $location_name = request('locationName');
+
+    $response = Http::get('http://api.weatherstack.com/current', [
+        'access_key' => config('services.weatherstack.key'),
+        'query' => $location_name
+    ]);
+    
+    return $response->json();
+
 });
