@@ -20,13 +20,17 @@ Route::middleware('auth:api')->get('/user', function (Request $request) {
 
 Route::get('/weather', function () {
 
-    $location_name = request('locationName');
-
-    $response = Http::get('http://api.weatherstack.com/current', [
-        'access_key' => config('services.weatherstack.key'),
-        'query' => $location_name
-    ]);
+    $lat = request('lat');
+    $lon = request('lon');
     
+    $response = Http::get('https://api.openweathermap.org/data/2.5/onecall', [
+        'lat' => $lat,
+        'lon' => $lon,
+        'exclude'=>'hourly,minutely,alerts',
+        'appid' => config('services.weather_api.key'),
+        'units' => 'metric'
+    ]);
+
     return $response->json();
 
 });

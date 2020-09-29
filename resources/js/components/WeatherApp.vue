@@ -15,88 +15,53 @@
                     </div>
 
                     <div class="mx-5">
-                        <div class="font-semibold"> {{ current_weather.short_description }} </div>
+                        <div class="font-semibold"> {{ current_weather.description }} </div>
                         <div> {{ current_weather.location }} </div>
                     </div>
                 </div>
                 <div>
-                    icon
+                    <img :src="current_weather.icon" alt="icon">
                 </div>
             </div>
             <!-- current-weather -->
             
-            <!-- future-weather -->
-            <div class="future-weather text-sm bg-gray-800 px-6 py-8 overflow-hidden">
+            <!-- forecast-weather -->
+            <div class="forecast-weather text-sm bg-gray-800 px-6 py-8 overflow-hidden">
 
-                <div class="flex items-center">
-                    <div class="w-1/6 text-gray-200"> MON </div>
+                <div v-for="(forecast,index) in daily_forecast_data" :key="index" class="forecast-item flex items-center">
+                    <div class="w-1/6 text-gray-200"> {{ forecast.day }} </div>
                     <div class="w-4/6 px-4 flex items-center"> 
-                        <div> icon </div>
-                        <div class="ml-3"> Cloudy with a chance of showers </div>
+                        <div>  <img :src=" forecast.icon " alt=""> </div>
+                        <div class="ml-3"> {{ forecast.description }} </div>
                     </div>
                     <div class="w-1/6 text-right">
-                        <div> 5°C</div>
-                        <div> -2°C</div>
-                    </div>
-                </div>
-
-                <div class="flex items-center mt-8">
-                    <div class="w-1/6 text-gray-200"> MON </div>
-                    <div class="w-4/6 px-4 flex items-center"> 
-                        <div> icon </div>
-                        <div class="ml-3"> Cloudy with a chance of showers </div>
-                    </div>
-                    <div class="w-1/6 text-right">
-                        <div> 5°C</div>
-                        <div> -2°C</div>
-                    </div>
-                </div>
-
-                <div class="flex items-center mt-8">
-                    <div class="w-1/6 text-gray-200"> MON </div>
-                    <div class="w-4/6 px-4 flex items-center"> 
-                        <div> icon </div>
-                        <div class="ml-3"> Cloudy with a chance of showers </div>
-                    </div>
-                    <div class="w-1/6 text-right">
-                        <div> 5°C</div>
-                        <div> -2°C</div>
-                    </div>
-                </div>
-
-                <div class="flex items-center mt-8">
-                    <div class="w-1/6 text-gray-200"> MON </div>
-                    <div class="w-4/6 px-4 flex items-center"> 
-                        <div> icon </div>
-                        <div class="ml-3"> Cloudy with a chance of showers </div>
-                    </div>
-                    <div class="w-1/6 text-right">
-                        <div> 5°C</div>
-                        <div> -2°C</div>
+                        <div> {{ forecast.max_temp }} </div>
+                        <div> {{ forecast.min_temp }} </div>
                     </div>
                 </div>
 
             </div>
-            <!-- future-weather -->
+            <!-- forecast-weather -->
         </div>
         <!-- weather-container -->
     </div>
 </template>
 
 <script>
-
-
 export default {
     data() {
         return {
             current_weather: {
                 now_temprature: Number,
                 feelslike: String,
-                short_description: String,
-                location: String
+                description: String,
+                location: String,
+                icon: String
             },
+            daily_forecast_data: [],
             location: {
-                'name': 'Yangon'
+                lat: '16.8409',
+                lon: '96.1735'
             }
         }
     },
@@ -105,16 +70,47 @@ export default {
     },
     methods: {
         fetchData() {
-            fetch(`/api/weather?locationName=${this.location.name}`).then(response => response.json() )
-            .then(data => this.addCurrnetData(data));
+            fetch(`/api/weather?lat=${this.location.lat}&lon=${this.location.lon}`).then(response => response.json() )
+            .then((responseJson) => {
+                this.addCurrnetData(responseJson);
+            })
         },
-        addCurrnetData(data) {      
-            console.log(data);
+        addCurrnetData(data) {    
+
             let current_weather = this.current_weather;
-            current_weather.now_temprature = `${data.current.temperature}°C`;
-            current_weather.feelslike = `${data.current.feelslike}°C`;
-            current_weather.short_description = data.current.weather_descriptions[0];
-            current_weather.location = `${data.location.name},${data.location.country}`;
+            current_weather.now_temprature = `${data.current.temp}°C`;
+            current_weather.feelslike = `${data.current.feels_like}°C`;
+            current_weather.description = data.current.weather[0].description;
+            current_weather.location = `${ data.timezone.split('/')[1] }`;
+            current_weather.icon = `http://openweathermap.org/img/w/${data.current.weather[0].icon}.png`;
+
+            this.addForecastData(data.daily);
+
+        },
+        addForecastData(daily_data) {
+
+            daily_data = daily_data.filter((data, index) => {
+                return index < 5;
+            });              // cannot limit api bcuz of unpaid version
+
+            this.daily_forecast_data = daily_data.map(data => {
+                
+                return {
+                    'day': this.toDayOfWeek(data.dt),
+                    'icon':`http://openweathermap.org/img/w/${data.weather[0].icon}.png`,
+                    'description': data.weather[0].description,
+                    'max_temp': `${data.temp.max}°C`,
+                    'min_temp': `${data.temp.min}°C`
+                };
+
+            })
+
+        },
+
+        toDayOfWeek(unix_timestamp) {
+            let new_day = new Date(unix_timestamp * 1000);
+            const day_texts = [ 'Mon', 'Tues', 'Wed', 'Thurs', 'Fri', 'Sat', 'Sun' ];
+            return day_texts[new_day.getDay()];
         }
     }
 }
